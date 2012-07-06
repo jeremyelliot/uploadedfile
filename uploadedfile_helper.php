@@ -1,47 +1,23 @@
 <?php
 
-if (!defined('BASEPATH'))
-	exit('No direct script access allowed');
+/*
+  if (!defined('BASEPATH'))
+  exit('No direct script access allowed');
+ */
 
 /**
- * Uploaded Files helper.
+ * Uploaded files helper for CodeIgniter framework.
  * 
  * Object wrapper for uploaded files that are available via the $_FILES array.
  * Provides accessors to each file's name, size, tmp_name, type and error code,
  * as well as method for saving the file to a final location.
- * 
- * A basic usage is as follows:
- * 
- * 	$save_path = 'uploaded_files/';
- * 	$files = UploadFile::get_uploaded();
- * 
- * 	if (!empty($files))
- * 	{
- * 		foreach ($files as $file)
- * 		{
- * 			try
- * 			{
- * 				$file->save_as($save_path . $file->get_name());
- * 				$messages[] = $file->get_name() . ' was saved';
- * 			}
- * 			catch (UploadFileException $ex)
- * 			{
- * 				$messages[] = $ex->getMessage();
- * 			}
- * 		}
- * 	}
- * 	else
- * 	{
- * 		$messages[] = 'no files were uploaded';
- * 	}
- * 
  * 
  * @author Jeremy Elliot
  *
  * For upload error codes refer to 
  * http://www.php.net/manual/en/features.file-upload.errors.php
  */
-class UploadFile {
+class UploadedFile {
 
 	private $type; // MIME type as reported by browser
 	private $size; // size of the uploaded file (bytes)
@@ -54,29 +30,8 @@ class UploadFile {
 	/**
 	 * Returns an array of UploadFiles created from the $_FILES array.
 	 * 
-	 * If a form was submitted that contained the following elements:
-	 * 
-	 * 		<input type="file" name="file_input1"/>
-	 * 		<input type="file" name="file_input2"/>
-	 * 		<input type="file" name="file_input3[0]"/>
-	 * 		<input type="file" name="file_input3[1]"/>
-	 * 		<input type="file" name="file_input3[2]"/>
-	 * 
-	 * 	get_uploaded() would return an array like this:
-	 * 
-	 * 		array(
-	 * 			'file_input1' => UploadFile,
-	 * 			'file_input2' => UploadFile,
-	 * 			'file_input3' => array(
-	 * 				UploadFile, 
-	 * 				UploadFile, 
-	 * 				UploadFile
-	 * 			)
-	 * 		);
-	 * 
 	 * @return array an array of UploadFile objects
 	 */
-
 	public static function get_uploaded()
 	{
 		$uploaded_files = array();
@@ -93,14 +48,14 @@ class UploadFile {
 							'size' => $properties['size'][$key],
 							'tmp_name' => $properties['tmp_name'][$key],
 							'name' => $properties['name'][$key]
-						);
-					$uploaded_files[$field_name][$key] = new UploadFile($props);
+					);
+					$uploaded_files[$field_name][$key] = new UploadedFile($props);
 				}
 			}
 			else
 			{
 				// single file for this form field
-				$uploaded_files[$field_name] = new UploadFile($properties);
+				$uploaded_files[$field_name] = new UploadedFile($properties);
 			}
 		}
 		return $uploaded_files;
@@ -115,16 +70,16 @@ class UploadFile {
 	{
 		if ($this->file_name)
 		{
-			throw new UploadFileException("cannot save_as: already saved");
+			throw new UploadedFileException("cannot save_as: already saved");
 		}
 		if (!$this->is_successful())
 		{
-			throw new UploadFileException(
+			throw new UploadedFileException(
 					"unable to save_as: upload error " . $this->error);
 		}
-		if (!move_uploaded_file($this->getTempName(), $file_path))
+		if (!move_uploaded_file($this->get_tmp_name(), $file_path))
 		{
-			throw new UploadFileException("failed to save_as({$file_path})");
+			throw new UploadedFileException("failed to save_as({$file_path})");
 		}
 		$this->file_name = $file_path;
 	}
@@ -150,43 +105,14 @@ class UploadFile {
 	}
 
 	/**
-	 * Returns a human-readable string representation of the state of this object
-	 * @return string state of this object
-	 */
-	public function toString()
-	{
-	  return
-			"Type: " . $this->get_type() . " \n" .
-			"Temp: " . $this->get_tmp_name() . " \n" .
-			"Error: " . $this->get_error() . " \n" .
-			"Size: " . $this->get_size() . " \n" .
-			"Name: " . $this->get_name() . " \n" .
-			"UID: " . $this->get_uid() . " \n";
-	}
-
-	/**
 	 * Returns TRUE if this file was uploaded successfuly, otherwise FALSE
-	 *	
+	 * 	
 	 * @return boolean uploaded successfuly
 	 */
 	public function is_successful()
 	{
 		return ($this->error === 0);
 	}
-
-	/**
-	 * Generates a pseudo-random/unique identifier for this file. This UID
-	 * can be used as a file name or part of a file name, to solve the problem 
-	 * of filename conflicts when many files are stored together.
-	 * @return void
-	 */
-	private function generate_uid()
-	{
-		$seed = $this->type . $this->tmp_name . $this->size . $this->name;
-		$this->uid = md5($seed . date("Ymdhis") . mt_rand());
-	}
-
-	//Accessor methods	
 
 	/**
 	 * The mime type of the file, if the browser provided this information. 
@@ -240,22 +166,27 @@ class UploadFile {
 	}
 
 	/**
-	 * Returns a randomly-generated hash string that can be used to create
-	 * a unique file name
+	 * Get a random unique identifier for this file. 
+	 * A hash string is generated the first time this method is called
+	 * and the same string is returned on subsequent calls.
+	 * This identifier can be used as a file name or part of a file name, 
+	 * to solve the problem of filename conflicts when many files are 
+	 * stored together.
 	 * @return string random hash string
 	 */
 	public function get_uid()
 	{
 		if (empty($this->uid))
 		{
-			$this->generate_uid();
+			$seed = $this->type . $this->tmp_name . $this->size . $this->name;
+			$this->uid = md5($seed . date("Ymdhis") . mt_rand());
 		}
 		return $this->uid;
 	}
 
 	/**
 	 * Returns the name by which this file was saved using save_as($file_path).
-	 * If this file has not been saved, returns false.
+	 * If this file has not been saved, returns FALSE.
 	 * @return string|boolean file name or FALSE
 	 */
 	public function get_file_name()
@@ -265,7 +196,7 @@ class UploadFile {
 
 }
 
-class UploadFileException extends Exception {
+class UploadedFileException extends Exception {
 	
 }
 
