@@ -11,7 +11,7 @@ type and error code, as well as method for saving the file
 to a final location.
 
 The static method *get_uploaded()* returns an array of 
-UploadFile objects. The array structure matches the way
+UploadedFile objects. The array structure matches the way
 the elements on the submitted form were named.
 
 For example, if a form was submitted that contained 
@@ -23,7 +23,7 @@ these elements:
 	<input type="file" name="photos[1]"/>
 	<input type="file" name="photos[2]"/>
 	
-*UploadFile::get_uploaded()* would return an array like this:
+*UploadedFile::get_uploaded()* would return an array like this:
 
 	array(
 		'logo' => UploadFile,
