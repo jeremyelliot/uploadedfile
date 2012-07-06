@@ -26,12 +26,12 @@ these elements:
 *UploadedFile::get_uploaded()* would return an array like this:
 
 	array(
-		'logo' => UploadFile,
-		'signature' => UploadFile,
+		'logo' => UploadedFile,
+		'signature' => UploadedFile,
 		'photos' => array(
-			UploadFile, 
-			UploadFile, 
-			UploadFile
+			UploadedFile, 
+			UploadedFile, 
+			UploadedFile
 		)
 	);
 	
